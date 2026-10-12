@@ -1,0 +1,11 @@
+fastapi>=0.143.0
+uvicorn>=0.34.0
+sqlalchemy>=2.0.40
+psycopg2-binary>=2.9.10
+psycopg[binary]>=3.2.0
+alembic>=1.15.0
+kafka-python>=3.0.11
+pydantic>=2.11.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+transformers

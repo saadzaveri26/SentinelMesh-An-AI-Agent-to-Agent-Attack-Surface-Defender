@@ -1,0 +1,18 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+.next/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Large model weights & trained artifacts
+*.safetensors
+*.bin
+*.pt
+**/backend/model/
+backend/model/
+app_build/backend/model/
