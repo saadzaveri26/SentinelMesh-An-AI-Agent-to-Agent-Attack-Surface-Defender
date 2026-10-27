@@ -41,12 +41,23 @@ def update_trust(db: DbSession, src_id, tgt_id, threat_score: float, flagged: bo
         edge.score = min(edge.score + NORMAL_BOOST, 1.0)
 
     rare = edge.interaction_count <= RARE_PAIR_THRESHOLD
-    anomaly = first_time or rare or edge.score < 0.3
+    degraded = edge.score < 0.3
+    anomaly = first_time or rare or degraded
+
+    flags = []
+    if first_time:
+        flags.append("first_time")
+    if rare:
+        flags.append("rare_pair")
+    if degraded:
+        flags.append("degraded_trust")
 
     return {
         "first_time": first_time,
         "rare_pair": rare,
+        "degraded_trust": degraded,
         "anomaly": anomaly,
+        "flags": flags,
         "trust_score": round(edge.score, 4),
         "interaction_count": edge.interaction_count,
     }

@@ -9,6 +9,7 @@ All choices below are confirmed. Do not substitute without asking.
 | Detection | Fine-tuned BERT (Hugging Face Transformers) |
 | Database | PostgreSQL + SQLAlchemy |
 | Frontend | Next.js + React Flow |
+| Demo Agents | n8n workflows (separate Docker Compose project) |
 | Infra | Docker Compose (local) |
 
 ## Key libraries (Python backend)
@@ -24,4 +25,5 @@ All choices below are confirmed. Do not substitute without asking.
 
 ## Environment
 - Secrets via `.env` (must be in `.gitignore`)
-- All services orchestrated via a single `docker-compose.yml`
+- Core services orchestrated via `docker-compose.yml`
+- Demo agents are n8n workflows running in a separate compose project, connected to the SentinelMesh network (`sentinelmesh_default`)

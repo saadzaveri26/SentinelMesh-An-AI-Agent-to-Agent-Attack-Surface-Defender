@@ -14,7 +14,9 @@ class MessageOut(BaseModel):
     receiver: str
     content: str
     timestamp: datetime
-    threat_score: float
+    bert_score: float
+    rule_hits: dict | list | int | None = None
+    anomaly_flags: list | None = None
     flagged: bool
 
     model_config = {"from_attributes": True}

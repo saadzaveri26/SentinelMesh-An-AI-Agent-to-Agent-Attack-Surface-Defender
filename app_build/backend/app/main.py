@@ -37,27 +37,35 @@ def handle_outbound(payload: dict):
         result = analyze(payload["content"])
         trust = update_trust(db, sender.id, receiver.id, result["score"], result["flagged"])
 
+        anomaly_flags = trust.get("flags", [])
+        bert_score = result.get("bert_score", result["score"])
+
         msg = Message(
             sender_id=sender.id,
             receiver_id=receiver.id,
             content=payload["content"],
-            threat_score=result["score"],
-            flagged=result["flagged"] or trust["anomaly"],
+            bert_score=bert_score,
+            rule_hits=result["rule_detail"].get("hits", {}),
+            anomaly_flags=anomaly_flags,
+            flagged=result["flagged"],
         )
         db.add(msg)
         db.commit()
 
-        publish("agent.inbound", {
-            "id": str(msg.id),
-            "sender": payload["sender"],
-            "receiver": payload["receiver"],
-            "content": payload["content"],
-            "threat_score": msg.threat_score,
-            "flagged": msg.flagged,
-            "category": result["category"],
-            "trust": trust,
-            "timestamp": msg.timestamp.isoformat(),
-        })
+        if not msg.flagged:
+            publish("agent.inbound", {
+                "id": str(msg.id),
+                "sender": payload["sender"],
+                "receiver": payload["receiver"],
+                "content": payload["content"],
+                "bert_score": msg.bert_score,
+                "rule_hits": msg.rule_hits,
+                "anomaly_flags": msg.anomaly_flags,
+                "flagged": msg.flagged,
+                "category": result["category"],
+                "trust": trust,
+                "timestamp": msg.timestamp.isoformat(),
+            })
     except SQLAlchemyError:
         db.rollback()
     finally:
@@ -116,7 +124,9 @@ def list_messages(limit: int = 50, db: DbSession = Depends(get_db)):
             receiver=r.name if r else "unknown",
             content=m.content,
             timestamp=m.timestamp,
-            threat_score=m.threat_score,
+            bert_score=m.bert_score,
+            rule_hits=m.rule_hits,
+            anomaly_flags=m.anomaly_flags,
             flagged=m.flagged,
         ))
     return out
@@ -233,22 +243,30 @@ def dashboard_stats(db: DbSession = Depends(get_db)):
 def dashboard_incidents(limit: int = 20, db: DbSession = Depends(get_db)):
     rows = db.execute(
         select(Message)
-        .where(Message.flagged == True)
+        .where((Message.flagged == True) | (Message.anomaly_flags.is_not(None)))
         .order_by(Message.timestamp.desc())
         .limit(limit)
     ).scalars().all()
 
     out = []
     for m in rows:
+        is_flagged = bool(m.flagged)
+        flags = m.anomaly_flags or []
+        if not is_flagged and not flags:
+            continue
         s = db.get(Agent, m.sender_id)
         r = db.get(Agent, m.receiver_id)
+        flag_name = flags[0] if len(flags) > 0 else None
         out.append({
             "id": str(m.id),
             "timestamp": m.timestamp.isoformat(),
             "sender": s.name if s else "unknown",
             "receiver": r.name if r else "unknown",
-            "threat_score": m.threat_score,
+            "bert_score": m.bert_score,
+            "threat_score": m.bert_score,
+            "flagged": is_flagged,
+            "anomaly_flags": flags,
+            "flag_name": flag_name,
             "content_preview": m.content[:120],
         })
     return out
-

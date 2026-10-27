@@ -16,3 +16,6 @@ build/
 **/backend/model/
 backend/model/
 app_build/backend/model/
+
+# Agent configurations & skills
+.agents/

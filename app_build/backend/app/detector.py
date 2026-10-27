@@ -37,9 +37,11 @@ def analyze(content: str) -> dict:
         category = "normal"
 
     flagged = combined_score >= 0.5 or rules["flagged"]
+    bert_score = round(1.0 - bert["scores"].get("normal", 1.0), 4) if "normal" in bert.get("scores", {}) else (bert["confidence"] if bert["label"] != "normal" else 0.0)
 
     return {
         "score": combined_score,
+        "bert_score": bert_score,
         "category": category,
         "flagged": flagged,
         "rule_detail": rules,
